@@ -201,8 +201,22 @@ export class CommentDataProvider {
       combined[pagedCount + i] = this._newItems[i];
     }
 
+    // Find the highest index that's been loaded. This is crucial for preventing
+    // empty space in the virtual scroll viewport when starting with only recent pages.
+    let maxLoadedIndex = -1;
+    for (const idx of this._pagedData.keys()) {
+      if (idx > maxLoadedIndex) maxLoadedIndex = idx;
+    }
+    if (this._newItems.length > 0) {
+      maxLoadedIndex = Math.max(maxLoadedIndex, pagedCount + this._newItems.length - 1);
+    }
+
+    // Trim the array to avoid rendering placeholder space for unloaded items.
+    // The indices of loaded items are preserved; we just don't allocate space for future loads.
+    const result = maxLoadedIndex >= 0 ? combined.slice(0, maxLoadedIndex + 1) : combined;
+
     this._inMemoryCount = this._newItems.length + this._pagedData.size;
-    this._data$.next(combined);
+    this._data$.next(result);
     this._inMemoryCount$.next(this._inMemoryCount);
   }
 }
